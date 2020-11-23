@@ -5,6 +5,7 @@
 static int MAX_ARGS = 50;
 
 struct compilerOps {
+  bool linkedLibs;
   bool debug;
   bool m32;
   bool math;

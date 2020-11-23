@@ -46,6 +46,7 @@ void fillArgs(int argc, char *argv[]) {
     init(argc, argv);
 
     char flag;
+    int from;
     while ((flag = parse()) != -1) {
         char *par;
 
@@ -75,6 +76,22 @@ void fillArgs(int argc, char *argv[]) {
                     error("no test file provided!", ERR_MISSING_ARGUMENT);
                 break;
 
+            case 'I':
+                params.tester.hideInput = true;
+                break;
+
+            case 'D':
+                params.tester.dontTrimData = true;
+                break;
+
+            case 'A':
+                params.tester.dontTrimAnsw = true;
+                break;
+
+            case 'F':
+                params.tester.onlyFailed = true;
+                break;
+
             case 'S':
                 par = getpar();
                 if (!par)
@@ -87,8 +104,75 @@ void fillArgs(int argc, char *argv[]) {
                 break;
 
             case 'd':
-                if (params.testFile)
-                    warning("pipe file overwriten!");
+                if (params.dir)
+                    warning("dir overwriten!");
+                params.dir = getpar();
+                break;
+
+            case 'o':
+                if (params.outName)
+                    warning("out name overwriten!");
+                params.outName = getpar();
+                break;
+
+            case 'p':
+                if (params.dir)
+                    warning("dir overwriten!");
+                //params.dir = ".";
+                break;
+
+            case 'g':
+                params.compiler.debug = true;
+                break;
+
+            case 'w':
+                params.noWarnings = true;
+                break;
+
+            case 's':
+                params.noMsgs = true;
+                break;
+
+            case 'j':
+                params.compiler.ejudge = true;
+                break;
+
+            case 'm':
+                params.compiler.math = true;
+                break;
+
+            case 'a':
+                params.compiler.m32 = true;
+                break;
+
+            case 'l':
+                params.compiler.linkedLibs = true;
+                break;
+
+            case 'h':
+                par = getpar();
+                help(par);
+                break;
+
+            case '-':
+                from = 1;
+                while (argc[from][1] != '-') from++;
+                for (int i = from + 1; i < argc; i++)
+                    if (argv[i][1] == 'G') //fill until gcc args
+                        break;
+                    else
+                        params.args[i - from - 1] = argv[i];
+                break;
+
+            case 'G':
+                from = 1;
+                while (argc[from][1] != 'G') from++;
+                for (int i = from + 1; i < argc; i++)
+                    if (argv[i][1] == '-') //fill until prog args
+                        break;
+                    else
+                        params.args[i - from - 1] = argv[i];
+                break;
 
             default:
                 warning("unknown flag %c\n", flag);
