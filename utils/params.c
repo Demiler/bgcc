@@ -2,53 +2,52 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "exitCodes.h"
 #include "argp.h"
 #include "params.h"
 #include "logs.h"
 
-params.fileName = NULL;
-params.pipeFile = NULL;
-params.testFile = NULL;
+void defaultParams(void) {
+    params.fileName = NULL;
+    params.pipeFile = NULL;
+    params.testFile = NULL;
 
-params.helpCmd = NULL;
-params.dir = NULL;
-params.outName = NULL;
+    params.dir = NULL;
+    params.outName = NULL;
 
-params.watch = false;
-params.run = false;
-params.sanitizer = 0;
+    params.watch = false;
+    params.run = false;
+    params.sanitizer = 0;
 
-params.compile.debug = false;
-params.compile.m32 = false;
-params.compile.math = false;
-params.compile.ejudge = false;
+    params.compiler.debug = false;
+    params.compiler.m32 = false;
+    params.compiler.math = false;
+    params.compiler.ejudge = false;
+    params.compiler.linkedLibs = false;
 
-params.tester.hideInput = false;
-params.tester.dontTrimData = false;
-params.tester.dontTrimAnsw = false;
-params.tester.onlyFailed = false;
+    params.tester.hideInput = false;
+    params.tester.dontTrimData = false;
+    params.tester.dontTrimAnsw = false;
+    params.tester.onlyFailed = false;
 
-params.noMsgs = false;
-params.noWarnings = false;
-params.noErrors = false;
+    params.noMsgs = false;
+    params.noWarnings = false;
 
-params.color = false;
+    params.color = false;
+}
 
 static void help() {
-    printf(
-      );
     exit(0);
 }
 
-params.fileName = NULL;
-
 void fillArgs(int argc, char *argv[]) {
     init(argc, argv);
+    defaultParams();
 
     char flag;
-    int from;
     while ((flag = parse()) != -1) {
         char *par;
+        int from;
 
         switch (flag) {
             case 0:
@@ -56,6 +55,7 @@ void fillArgs(int argc, char *argv[]) {
                     warning("input file overwriten!");
                 params.fileName = getlost();
                 break;
+
             case 'r':
                 params.run = true;
                 break;
@@ -149,29 +149,35 @@ void fillArgs(int argc, char *argv[]) {
                 params.compiler.linkedLibs = true;
                 break;
 
+            case 'c':
+                params.color = true;
+                break;
+
             case 'h':
                 par = getpar();
                 help(par);
                 break;
 
             case '-':
-                from = 1;
-                while (argc[from][1] != '-') from++;
-                for (int i = from + 1; i < argc; i++)
-                    if (argv[i][1] == 'G') //fill until gcc args
-                        break;
-                    else
-                        params.args[i - from - 1] = argv[i];
+                par = getpar();
+                from = 0;
+                while (par && par[1] != 'G') {
+                    params.args[from++] = par;
+                    par = getpar();
+                }
+                if (par && par[1] == 'G')
+                    ungetp();
                 break;
 
             case 'G':
-                from = 1;
-                while (argc[from][1] != 'G') from++;
-                for (int i = from + 1; i < argc; i++)
-                    if (argv[i][1] == '-') //fill until prog args
-                        break;
-                    else
-                        params.args[i - from - 1] = argv[i];
+                par = getpar();
+                from = 0;
+                while (par && par[1] != '-') {
+                    params.compiler.args[from++] = par;
+                    par = getpar();
+                }
+                if (par && par[1] == '-')
+                    ungetp();
                 break;
 
             default:

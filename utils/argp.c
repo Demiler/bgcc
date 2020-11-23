@@ -3,14 +3,17 @@ static char **argvptr = 0;
 static int argcc = 0;
 
 static int param = 0;
+static int ignoreArg = 0;
 char *ungetp(void) {
     if (param == 0) return 0;
+    ignoreArg--;
     return argvptr[param--];
 }
 
 char *getpar(void) {
     if (param >= argcc) return NULL;
     char *ret = argvptr[param++];
+    ignoreArg++;
     return ret;
     //return argvptr[param++];
 }
@@ -27,8 +30,8 @@ void init(int argc, char **argv) {
 }
 
 char parse(void) {
-    static int lastArgc = 1;
     static char *lastCh = 0;
+    static int lastArgc = 1;
 
     while (lastArgc < argcc) {
         if (param < lastArgc + 1) {
@@ -46,7 +49,9 @@ char parse(void) {
 
             lastCh = 0;
         }
-        lastArgc++;
+
+        lastArgc += ignoreArg + 1;
+        ignoreArg = 0;
     }
     return -1;
 }

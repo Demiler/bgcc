@@ -28,7 +28,7 @@ void warning(const char *msg, ...) {
     va_end(args);
 }
 
-void log(const char *msg, ...) {
+void msg(const char *msg, ...) {
     va_list args;
     va_start(args, msg);
     vfprintf(stdout, msg, args);
