@@ -24,6 +24,7 @@ void defaultParams(void) {
     params.compiler.math = false;
     params.compiler.ejudge = false;
     params.compiler.linkedLibs = false;
+    params.compiler.argc = 0;
 
     params.tester.hideInput = false;
     params.tester.dontTrimData = false;
@@ -33,6 +34,7 @@ void defaultParams(void) {
     params.noMsgs = false;
     params.noWarnings = false;
 
+    params.argc = 0;
     params.color = false;
 }
 
@@ -160,9 +162,9 @@ void fillArgs(int argc, char *argv[]) {
 
             case '-':
                 par = getpar();
-                from = 0;
+                params.argc = 0;
                 while (par && par[1] != 'G') {
-                    params.args[from++] = par;
+                    params.args[params.argc++] = par;
                     par = getpar();
                 }
                 if (par && par[1] == 'G')
@@ -171,9 +173,9 @@ void fillArgs(int argc, char *argv[]) {
 
             case 'G':
                 par = getpar();
-                from = 0;
+                params.compiler.argc = 0;
                 while (par && par[1] != '-') {
-                    params.compiler.args[from++] = par;
+                    params.compiler.args[params.compiler.argc++] = par;
                     par = getpar();
                 }
                 if (par && par[1] == '-')

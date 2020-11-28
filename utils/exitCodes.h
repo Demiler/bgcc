@@ -9,5 +9,8 @@ enum {
     ERR_LONG_FILENAME = 6,
     ERR_NO_FILE_EXT = 7,
     ERR_FORK = 8,
+    ERR_NE_MEMORY = 9,
+    ERR_EXEC = 10,
+    ERR_COMILATION_FAILED = 11,
 };
 #endif

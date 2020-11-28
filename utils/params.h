@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #define MAX_ARGS 50
+#define COMP_PARAMS 4
 
 struct compilerOps {
   bool linkedLibs;
@@ -11,6 +12,7 @@ struct compilerOps {
   bool math;
   bool ejudge;
   char *args[MAX_ARGS];
+  size_t argc;
 };
 
 struct testerOps {
@@ -39,6 +41,7 @@ struct {
   bool noWarnings;
 
   char *args[MAX_ARGS];
+  size_t argc;
   bool color;
 } params;
 
