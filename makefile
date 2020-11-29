@@ -1,25 +1,25 @@
 all: build
 
+build/help.o: help.c
+	gcc -c -o $@ $<
+
+build/defaults.o: utils/defaults.c
+	gcc -c -o $@ $<
+
 build/logs.o: utils/logs.c
-	gcc -o build/logs.o utils/logs.c -c
+	gcc -c -o $@ $<
 
 build/params.o: utils/params.c
-	gcc -o build/params.o utils/params.c -c
+	gcc -c -o $@ $<
 
 build/argp.o: utils/argp.c
-	gcc -o build/argp.o utils/argp.c -c
-
-build/main.o: main.c
-	gcc -o build/main.o main.c -c
+	gcc -c -o $@ $<
 
 build:\
-	build/main.o\
-	build/argp.o\
+	build/help.o\
+	build/defaults.o\
+	build/logs.o\
 	build/params.o\
-	build/logs.o
-	gcc -g -o bgcc\
-		build/main.o\
-		build/argp.o\
-		build/params.o\
-		build/logs.o
-
+	build/argp.o\
+	main.c
+	gcc -g -o bgcc $^

@@ -12,5 +12,6 @@ enum {
     ERR_NE_MEMORY = 9,
     ERR_EXEC = 10,
     ERR_COMILATION_FAILED = 11,
+    ERR_STAT = 12,
 };
 #endif

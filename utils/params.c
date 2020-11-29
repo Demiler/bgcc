@@ -6,6 +6,8 @@
 #include "argp.h"
 #include "params.h"
 #include "logs.h"
+#include "defaults.h"
+#include "../help.h"
 
 void defaultParams(void) {
     params.fileName = NULL;
@@ -36,10 +38,6 @@ void defaultParams(void) {
 
     params.argc = 0;
     params.color = false;
-}
-
-static void help() {
-    exit(0);
 }
 
 void fillArgs(int argc, char *argv[]) {
@@ -120,7 +118,7 @@ void fillArgs(int argc, char *argv[]) {
             case 'p':
                 if (params.dir)
                     warning("dir overwriten!");
-                //params.dir = ".";
+                params.dir = defaults.curDir; //.
                 break;
 
             case 'g':
@@ -162,13 +160,14 @@ void fillArgs(int argc, char *argv[]) {
 
             case '-':
                 par = getpar();
-                params.argc = 0;
+                params.argc = 1;
                 while (par && par[1] != 'G') {
                     params.args[params.argc++] = par;
                     par = getpar();
                 }
                 if (par && par[1] == 'G')
                     ungetp();
+                params.args[params.argc] = NULL;
                 break;
 
             case 'G':
@@ -183,7 +182,7 @@ void fillArgs(int argc, char *argv[]) {
                 break;
 
             default:
-                warning("unknown flag %c\n", flag);
+                warning("unknown flag %c", flag);
         }
     }
 }
