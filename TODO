@@ -1,0 +1,34 @@
+TODO:
+  help.
+  -h    Display this message
+  -L    Print sanitizers levels
+  -e    Script error codes
+
+  tester.
+  -t    Run test from file
+   -I   Hide test input
+   -D   Dont trim test data
+   -A   Dont trim test answer
+   -T   Show test file structure
+   -F   Show only failed tests
+
+  -S n  Compile with sanitizer level n
+  -W    Watch file
+  -w    Ignore script warnings
+
+  add flags
+  -G compiler flags
+
+completed:
+  -r    Run if compile
+  -i    Pipe data from file
+  -d    Output dir (build by default)
+  -o    Set output file
+  -p    Output files in current dir
+  -g    Compile with debug
+  -s    No additional script messages
+  -j    Use ejudge flags
+  -m    Use math lib
+  -a    Use 32 arch
+  -l    Use linked libraries
+  --    Pass args to your program
