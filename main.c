@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -12,6 +13,8 @@
 #include "utils/exitCodes.h"
 #include "utils/defaults.h"
 #include "utils/signames.h"
+#include "utils/global.h"
+#include "help.h"
 
 const char *getFilenameExt(const char *fileName) {
     const char *dot = strrchr(fileName, '.');
@@ -85,23 +88,41 @@ void initProg(int argc, char *argv[]) {
 
     if (!params.outName) {
         int len = strlen(params.fileName);
-        if (len > 256)
+        if (len > PATH_MAX)
             error("file name is too long", ERR_LONG_FILENAME);
         const char *dot = getFilenameExt(params.fileName);
         if (!dot)
             error("no file extension!", ERR_NO_FILE_EXT);
         int baseNameLen = dot - params.fileName - 1;
-        strncpy(defaults.genName, params.fileName, baseNameLen);
-        params.outName = defaults.genName;
+        strncpy(global.genName, params.fileName, baseNameLen);
+        params.outName = global.genName;
     }
 
 }
 
-int main(int argc, char *argv[]) {
-    initProg(argc, argv);
+int needRecompile(const char *name, const char *outName) {
+    if (access(outName, F_OK))
+        return true;
+    struct stat origin, compiled;
+    if (stat(name, &origin) == -1) {
+        int err = errno;
+        error("stat failed for file %s. Errno: %d", ERR_STAT, outName, err);
+    }
+    if (stat(outName, &compiled) == -1) {
+        int err = errno;
+        error("stat failed for file %s. Errno: %d", ERR_STAT, name, err);
+    }
+    return origin.st_mtime > compiled.st_mtime;
+}
 
-    char fullOutName[PATH_MAX];
-    snprintf(fullOutName, PATH_MAX, "%s/%s", params.dir, params.outName);
+void compile(const char *outName) {
+    bool recompile = needRecompile(params.fileName, outName);
+    if (recompile)
+        msg("File being recompiled");
+    else {
+        msg("File isn't being recompiled");
+        return;
+    }
 
     pid_t pid = fork();
     if (pid == -1) {
@@ -110,7 +131,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!pid) {
-        const char **gccArgs = fillCompilerArgs(fullOutName);
+        const char **gccArgs = fillCompilerArgs(outName);
         execvp("gcc", (char*const*)gccArgs);
         free(gccArgs);
         int err = errno;
@@ -121,32 +142,90 @@ int main(int argc, char *argv[]) {
 
     if (!WIFEXITED(status) || WEXITSTATUS(status))
         error("compilation failed", ERR_COMILATION_FAILED);
+}
+
+void checkProgStatus(int status) {
+    if (WIFEXITED(status)) {
+        if (WEXITSTATUS(status))
+            warning("program returned non-zero (%d) value", WEXITSTATUS(status));
+    }
+    else if (WIFSIGNALED(status)) {
+        int sig = WTERMSIG(status);
+        if (sig > 31)
+            warning("program got signal %d - unknown signal", sig);
+        else
+            warning("program got signal %d - %s", sig, signames[sig - 1]);
+    }
+}
+
+void justRun(const char *program) {
+    pid_t pid = fork();
+    if (pid == -1) {
+        int err = errno;
+        error("cannot create proccess. Errno: %d", ERR_FORK, err);
+    }
+
+    if (!pid) {
+        params.args[0] = (char*)program;
+        execv(program, params.args);
+        int err = errno;
+        error("cannot exec program. Errno: %d", ERR_EXEC, err);
+    }
+
+    int status;
+    waitpid(pid, &status, 0);
+    checkProgStatus(status);
+}
+
+void runPipe(const char *program) {
+    pid_t pid = fork();
+    if (pid == -1) {
+        int err = errno;
+        error("cannot create proccess. Errno: %d", ERR_FORK, err);
+    }
+
+    if (!pid) {
+        int pipeFile = open(params.pipeFile, O_RDONLY);
+        if (pipeFile == -1) {
+            int err = errno;
+            error("open failed for file %s. Errno: %d", ERR_EXEC, params.pipeFile, err);
+        }
+
+        if (dup2(pipeFile, STDIN_FILENO) == -1) {
+            int err = errno;
+            error("dup2 failed. Errno: %d", ERR_EXEC, err);
+        }
+        execl(program, program, NULL);
+        int err = errno;
+        error("cannot exec program. Errno: %d", ERR_EXEC, err);
+    }
+
+    int status;
+    waitpid(pid, &status, 0);
+    checkProgStatus(status);
+}
+
+void runTest(const char *program) {
+}
+
+int main(int argc, char *argv[]) {
+    if (argc == 1)
+        help(NULL);
+    initProg(argc, argv);
+
+    char fullOutName[PATH_MAX];
+    snprintf(fullOutName, PATH_MAX, "%s/%s", params.dir, params.outName);
+
+    compile(fullOutName);
 
     if (params.run) {
-        pid = fork();
-        if (pid == -1) {
-            int err = errno;
-            error("cannot create proccess. Errno: %d", ERR_FORK, err);
-        }
-
-        if (!pid) {
-            execl(fullOutName, fullOutName, NULL);
-            int err = errno;
-            error("cannot exec program. Errno: %d", ERR_EXEC, err);
-        }
-
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status)) {
-            if (WEXITSTATUS(status))
-                warning("program returned non-zero (%d) value", WEXITSTATUS(status));
-        }
-        else if (WIFSIGNALED(status)) {
-            int sig = WTERMSIG(status);
-            if (sig > 31)
-                warning("program got signal %d - unknown signal", sig);
-            else
-                warning("program got signal %d - %s", sig, signames[sig - 1]);
-        }
+        if (params.testFile)
+            global.runFunction = runTest;
+        else if (params.pipeFile)
+            global.runFunction = runPipe;
+        else
+            global.runFunction = justRun;
+        global.runFunction(fullOutName);
     }
 
     return 0;
